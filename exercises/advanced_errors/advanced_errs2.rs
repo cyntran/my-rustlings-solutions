@@ -67,7 +67,6 @@ impl Display for ParseClimateError {
             BadLen => write!(f, "incorrect number of fields"),
             ParseInt(e) => write!(f, "error parsing year: invalid digit found in string"),
             ParseFloat(e) => write!(f, "error parsing temperature: {}", e),
-            _ => write!(f, "unhandled error!"),
         }
     }
 }
