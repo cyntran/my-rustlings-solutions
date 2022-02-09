@@ -6,26 +6,38 @@
 // of "waiting..." and the program ends without timing out when running,
 // you've got it :)
 
-// I AM NOT DONE
-
-use std::sync::Arc;
+use std::sync::{Mutex,Arc};
 use std::thread;
 use std::time::Duration;
 
+// lock values accessed concurrently via Mutex
 struct JobStatus {
-    jobs_completed: u32,
+    jobs_completed: Mutex<u32>,
 }
 
 fn main() {
-    let status = Arc::new(JobStatus { jobs_completed: 0 });
+    // Arc allows you to share this Status struct across multiple threads 
+    let status = Arc::new(JobStatus { 
+        jobs_completed: Mutex::new(0) 
+    });
+
+    // bumps up arc's reference count (out of scope, decreases count)
+    // necessary to know how many references of Status exists across
+    // the threads to know how to deallocate it. 
     let status_shared = status.clone();
+
+    // we execute code within the closure inside a new thread
+    // 'move' gives the captured values to the closure
     thread::spawn(move || {
         for _ in 0..10 {
+            // the lock on status gets dropped outside this scope
+            let mut count = status_shared.jobs_completed.lock().unwrap();
+            *count += 1;
             thread::sleep(Duration::from_millis(250));
-            status_shared.jobs_completed += 1;
         }
     });
-    while status.jobs_completed < 10 {
+
+    while *status.jobs_completed.lock().unwrap() < 10 {
         println!("waiting... ");
         thread::sleep(Duration::from_millis(500));
     }
